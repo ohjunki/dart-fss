@@ -106,3 +106,9 @@ venv.bak/
 
 #jupyter notebook
 *.ipynb
+
+
+corpList/*
+corpListOb/*
+.vscode
+fsdata

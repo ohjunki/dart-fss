@@ -10,7 +10,6 @@ from dart_fss.fs import extract, FinancialStatement
 
 str_or_list = Union[str, List[str]]
 
-
 class Corp(object):
     """ 회사(종목) 정보를 담고 있는 클래스
 
@@ -82,6 +81,7 @@ class Corp(object):
         return dict_to_html(self.to_dict(), header=['Label', 'Data'])
 
     def load(self):
+        print(self._info['corp_code']+" 종목 정보 로딩 ")
         """ 종목 정보 로딩 """
         if self._loading is False:
             info = get_corp_info(self._info['corp_code'])
@@ -225,3 +225,7 @@ class Corp(object):
 
          """
         return extract(self.corp_code, bgn_de, end_de, fs_tp, separate, report_tp, lang, separator)
+
+class CorpFromFile(Corp):
+    def __init__(self, info : Dict ):
+        self._info = info

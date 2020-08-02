@@ -5,9 +5,12 @@ from dart_fss.utils import Singleton, Spinner
 from dart_fss.api.filings import get_corp_code
 from dart_fss.api.market import get_stock_market_list
 from dart_fss.corp.corp import Corp
+from dart_fss.corp.corp import CorpFromFile
+import pickle
+import os
 
 
-def get_corp_list():
+def get_corp_list(loadFromFile = False):
     """ DART 공시된 회사 리스트 반환
 
     Returns
@@ -15,7 +18,7 @@ def get_corp_list():
     CorpList
         회사 리스트
     """
-    return CorpList()
+    return CorpList(False,loadFromFile)
 
 
 def market_type_checker(market: Union[str, list]) -> List[str]:
@@ -43,9 +46,10 @@ def market_type_checker(market: Union[str, list]) -> List[str]:
     return market
 
 
+corpListDirectoryPath = os.getcwd()+"/corpList"
 class CorpList(object, metaclass=Singleton):
-
-    def __init__(self, profile=False):
+    def __init__(self, profile=False, loadFromFile=False):
+        self.loadFromFile = loadFromFile
         """ CorpList 초기화
 
         Parameters
@@ -68,6 +72,27 @@ class CorpList(object, metaclass=Singleton):
         if self._corps is None:
             self.load(profile=self._profile)
 
+    def saveAllCops(self):
+        corpInfoDic = {}
+        for corp in self._corps:
+            corpInfoDic[corp.corp_code] = corp.to_dict()
+        f = open( corpListDirectoryPath+"/allDic", "wb" )   
+        pickle.dump( corpInfoDic , f )
+        f.close()
+
+        f = open( corpListDirectoryPath+"/_stock_market", "wb" )  
+        pickle.dump( self._stock_market , f )
+        f.close() 
+
+    def loadCorpsFromFiles(self):
+        f = open( corpListDirectoryPath+"/allDic", "rb")
+        dic = pickle.load(f)
+        f.close()
+        corp_list = []
+        for key in dic.keys():
+            corp_list.append(CorpFromFile(dic[key]))
+        return corp_list
+
     def load(self, profile=False):
         """ 회사 정보 로딩
 
@@ -79,17 +104,25 @@ class CorpList(object, metaclass=Singleton):
         # Loading Stock Market Information
         spinner = Spinner('Loading Stock Market Information')
         spinner.start()
-        for k in ['Y', 'K', 'N']:
-            data = get_stock_market_list(k, False)
-            self._stock_market = {**self._stock_market, **data}
+        if self.loadFromFile :
+            f = open( corpListDirectoryPath+"/_stock_market", "rb")
+            self._stock_market = pickle.load(f)
+            f.close()
+        else:
+            for k in ['Y', 'K']:
+                data = get_stock_market_list(k, False)
+                self._stock_market = {**self._stock_market, **data}
         spinner.stop()
 
         spinner = Spinner('Loading Companies in OpenDART')
         spinner.start()
-
         sectors = set()
 
-        self._corps = [Corp(**x, profile=profile) for x in get_corp_code()]
+        if self.loadFromFile:
+            self._corps = [x for x in self.loadCorpsFromFiles()]
+        else:
+            self._corps = [Corp(**x, profile=profile) for x in get_corp_code()]
+
         for idx, x in enumerate(self._corps):
             self._corp_codes[x.corp_code] = idx
             self._corp_names.append(x.corp_name)

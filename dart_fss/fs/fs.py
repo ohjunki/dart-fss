@@ -42,7 +42,7 @@ class FinancialStatement(object):
             pd.options.display.float_format = '{:}'.format
         self.info['separator'] = separator
 
-    def show(self, tp, show_class: bool = True, show_depth: int = 10, show_concept: bool = True) -> DataFrame:
+    def show(self, tp, show_class: bool = False, show_depth: int = 10, show_concept: bool = False) -> DataFrame:
         """
         재무제표 정보를 표시해주는 Method
 
