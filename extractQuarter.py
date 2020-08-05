@@ -5,8 +5,7 @@ import pickle
 from pandas import DataFrame
 import pandas as pd
 import stockprice
-from CompanyValue import CompanyValueAlgo1
-import fsExtractManager
+import AnalystFinancialStatementYear
 import os
 import random
 

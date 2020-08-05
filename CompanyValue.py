@@ -16,36 +16,23 @@ from decimal import *
 import os
 import pickle
 
-
-class CompanyValueAlgo1(object):
-    def __init__(self, code, stock_code, name, liabilities_risk_ratio = 1.2, goal_rate_of_return=0.06 ):
-        super().__init__()
-        self.isErrorCorp = False
-        self.code = code
-        self.stock_code = stock_code
-        self.name = name
-        self.liabilities_risk_ratio = liabilities_risk_ratio
-        self.goal_rate_of_return = goal_rate_of_return
-        self.df = pd.DataFrame()
-        try:
-            self.stockprice = stockprice.get_close_stock_price_with_name( self.name )
-            self.totalstockcount = stockprice.get_total_stock_count( stock_code )
-            self.recentTotalStockPrice = stockprice.get_recent_open_total_stock_price( stock_code )
-        except Exception:
-            self.isErrorCorp = True
-
-        if not self.isErrorCorp and self.recentTotalStockPrice == 0:
-            self.isErrorCorp = True
-        
-        
+class ValueDataFrameModel(object):
+    """
+        손익계산서에서 추출하는 데이터 리스트이다.
+        또한 각 항목이 여러 이름으로 불릴 수 있기 떄문에 계산될 수 있는 항목리스트를 가지고 있다.
+    """
     def getISDataColumns( self ):
         return {
-            '당기순이익(손실)' : { 
-                '당기순이익(손실)' : 0 ,
-                '당기순손실' : 0
+            '영업이익' : { 
+                '영업이익(손실)' : 0 ,
+                '영업이익' : 0,
+                '영업손실' : 0
             }
         }
-        # something
+    """
+        대조대차표에서 추출하는 데이터 리스트이다.
+        또한 각 항목이 여러 이름으로 불릴 수 있기 떄문에 계산될 수 있는 항목리스트를 가지고 있다.
+    """
     def getBSDataColumns( self):
         return { 
             '유동자산' : { '유동자산' : 0  },
@@ -61,33 +48,102 @@ class CompanyValueAlgo1(object):
             '비유동부채' : { '비유동부채' : 0 },
         }
     def getDFindex( self ):
-        return [ '유동자산', '투자자산', '유동부채', '비유동부채', '당기순이익(손실)', '회사가치' ]
+        return [ '유동자산', '투자자산', '유동부채', '비유동부채', '영업이익', '회사가치' ]
+
+dataModel = ValueDataFrameModel()
+class CompanyValueAlgo1(object):
+    def __init__(self, code, stock_code, name, liabilities_risk_ratio = 1.2, goal_rate_of_return=0.06 ):
+        super().__init__()
+        self.isErrorCorp = False
+        self.code = code
+        self.stock_code = stock_code
+        self.name = name
+        self.liabilities_risk_ratio = liabilities_risk_ratio
+        self.goal_rate_of_return = goal_rate_of_return
+        self.df = pd.DataFrame()
+        self.info = {}
+        try:
+            self.totalStockCount = stockprice.get_total_stock_count( stock_code )
+            self.recentTotalStockPrice = stockprice.get_recent_open_total_stock_price( stock_code )
+        except Exception:
+            self.isErrorCorp = True
+
+        if not self.isErrorCorp and self.recentTotalStockPrice == 0:
+            self.isErrorCorp = True
+        
+        if not self.isErrorCorp :
+            self._info = {
+                '이름' : self.name,
+                '종목코드' : self.stock_code ,
+                '시가총액' : self.recentTotalStockPrice,
+                '총 주식 수' : self.totalStockCount,
+                '부채 리스크율' : self.liabilities_risk_ratio,
+                '선호 수익률' : self.goal_rate_of_return
+            }
+
+    def getISDataColumns( self ):
+        return dataModel.getISDataColumns()
+
+    def getBSDataColumns( self):
+        return dataModel.getBSDataColumns()
+
+    def getDFindex( self ):
+        return dataModel.getDFindex()
 
     def appendNewDateInfo( self, df ):
         self.df = pd.concat([self.df, df], axis=1)
 
-
+    """
+        가장최근 분기부터 4년치의 가치를 분석
+        4년치의 가치 성장평균을 최근분기가치에 더해서 계산한다. 더할때 비율은 n개년/4 ---- 4개년보다 적을 경우 비율감소
+        미래가치와 현재가치의 평균을 최종가치로 평가한다.
+        미래, 현재, 평균의 각각 수익률을 계산한다.
+    """
     def calculateCompanyValue( self ):
         for column in self.df.columns:
             data = self.df.loc[ : , column]
             value = data['유동자산'] + data['투자자산'] - data['유동부채']*Decimal(self.liabilities_risk_ratio) - data['비유동부채']
-            if data['당기순이익(손실)'] > 0 :
-                value += data['당기순이익(손실)']*Decimal(0.6)/Decimal(self.goal_rate_of_return)
+            if data['영업이익'] > 0 :
+                value += data['영업이익']*Decimal(0.6)/Decimal(self.goal_rate_of_return)
             self.df.loc['회사가치'][column] = value
 
-        self.cv2019 = self.df.loc[ '회사가치', self.df.columns[0] ]
-        self.cv2018 = self.df.loc[ '회사가치', self.df.columns[1] ] if len(self.df.columns) > 2 else 0
-        self.cv2017 = self.df.loc[ '회사가치', self.df.columns[2] ] if len(self.df.columns) > 3 else 0
-        self.cv2016 = self.df.loc[ '회사가치', self.df.columns[3] ] if len(self.df.columns) > 4 else 0
+        # TODO- columns SORT
+        for column in self.df.columns:
+            self._info[column] = self.df.loc[ '회사가치', column ]
         
-        #increse = (( self.cv2019-self.cv2018 )*Decimal(3) + ( self.cv2018-self.cv2017 )*Decimal(2) + ( self.cv2017-self.cv2016 ) )/Decimal(6)
-        self.cv2020 = self.cv2019 #+increse
-        self.expectReturnRatio = Decimal(100)*(( self.cv2020 - self.recentTotalStockPrice ) / self.recentTotalStockPrice)
-        self.df.append(pd.DataFrame( [ self.recentTotalStockPrice ] , index=['현재가치'] , columns=[self.df.columns[0]] ))
-        self.df.append(pd.DataFrame( [ self.getExpectReturnRatio() ] , index=['예상수익률'] , columns=[self.df.columns[0]] ))
+        valueDiffSum = Decimal(0)
+        for index in range(0, min( 3, len(self.df.columns)-1 ) ):
+            valueDiffSum += ( self.df.loc[ '회사가치', self.df.columns[index] ] - self.df.loc[ '회사가치', self.df.columns[index-1] ] )
         
-    def getExpectReturnRatio( self ):
-        return self.expectReturnRatio
+        if min( 3, len(self.df.columns)-1 ) > 0:
+            valueDiffSum /= Decimal(min( 3, len(self.df.columns)-1 ))
+
+        self.currentValue = self.df.loc[ '회사가치', self.df.columns[0] ]
+        self.feautureValue = self.currentValue + valueDiffSum
+        self.avgValue = ( self.feautureValue + self.df.loc[ '회사가치', self.df.columns[0] ] ) / Decimal(2)
+        self.currentReturnRatio = Decimal(100)*(( self.currentValue - self.recentTotalStockPrice ) / self.recentTotalStockPrice )
+        self.featureReturnRatio = Decimal(100)*(( self.feautureValue - self.recentTotalStockPrice ) / self.recentTotalStockPrice)
+        self.avgReturnRatio = Decimal(100)*(( self.avgValue - self.recentTotalStockPrice ) / self.recentTotalStockPrice)
+        self.vb_cur_sp = self.currentValue / self.totalStockCount
+        self.vb_fea_sp = self.feautureValue / self.totalStockCount
+        self.vb_avg_sp = self.avgValue / self.totalStockCount
+
+        self.writeToInfo()
+        
+    def writeToInfo( self ):
+        self._info['currentValue'] = self.currentValue
+        self._info['feautureValue'] = self.feautureValue
+        self._info['avgValue'] = self.avgValue
+        self._info['currentReturnRatio'] = self.currentReturnRatio
+        self._info['featureReturnRatio'] = self.featureReturnRatio
+        self._info['avgReturnRatio'] = self.avgReturnRatio
+        self._info['vb_cur_sp'] = self.vb_cur_sp
+        self._info['vb_fea_sp'] = self.vb_fea_sp
+        self._info['vb_avg_sp'] = self.vb_avg_sp
+
+        
+    def isValuableCompany( self ):
+        return self.avgReturnRatio > 30
 
     def saveResult( self ):
         prvfix_filePath = "{:s}/[{:s}]{:s}_{:s}".format(fm.goodCorpListDirectoryPath, str(int(self.expectReturnRatio)), self.name, self.stock_code )
@@ -110,17 +166,4 @@ class CompanyValueAlgo1(object):
         f.close()
 
     def to_Dict_info( self ):
-        return { 
-            '이름' : self.name,
-            '종목코드' : self.stock_code ,
-            '수익률' : self.expectReturnRatio,
-            '시가총액' : self.recentTotalStockPrice,
-            'cv2020' : self.cv2020,
-            'cv2019' : self.cv2019,
-            'cv2018' : self.cv2018,
-            'cv2017' : self.cv2017,
-            'cv2016' : self.cv2016,
-            '총 주식 수' : self.totalstockcount,
-            '부채 리스크율' : self.liabilities_risk_ratio,
-            '선호 수익률' : self.goal_rate_of_return,
-        }
+        return self._info
