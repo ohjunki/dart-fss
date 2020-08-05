@@ -1046,7 +1046,7 @@ def extract(corp_code: str,
                                  pblntf_detail_ty=pblntf_detail_ty, page_count=100, last_reprt_at='Y')
     finally:
         if len(reports) == 0:
-            raise RuntimeError('Could not find an annual report')
+            raise NoDataReceived('Could not find an annual report')
 
         next_index = 0
         for idx, _ in enumerate(reports):

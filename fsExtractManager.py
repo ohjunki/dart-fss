@@ -13,8 +13,8 @@ def calculCompanyValue( cv : CompanyValueAlgo1 , fs_bs : DataFrame , fs_is : Dat
     kr_istype = fs_is.loc[ : , [ fs_is.columns[0] ]]
 
 
-    #df = DataFrame( [], columns=values_bs.columns, index=cv.getDFindex().keys() )
-    df = DataFrame( [], columns=values_bs.columns, index=[ '유동자산', '투자자산', '유동부채', '비유동부채', '당기순이익(손실)', '회사가치' ] )
+    df = DataFrame( [], columns=values_bs.columns, index=cv.getDFindex() )
+    # df = DataFrame( [], columns=values_bs.columns, index=[ '유동자산', '투자자산', '유동부채', '비유동부채', '당기순이익(손실)', '회사가치' ] )
 
     for column in values_bs.columns:
         curbs = values_bs.loc[ : , [column] ]
@@ -29,7 +29,7 @@ def calculCompanyValue( cv : CompanyValueAlgo1 , fs_bs : DataFrame , fs_is : Dat
                             sum += Decimal(curbs.loc[ indexOfdKey[0]][0])
                     except Exception:
                         pass
-            print(key+" = "+str(sum))
+            # print(key+" = "+str(sum))
             df.loc[ key, [column] ] = sum
 
     for column in values_is.columns:
@@ -45,9 +45,10 @@ def calculCompanyValue( cv : CompanyValueAlgo1 , fs_bs : DataFrame , fs_is : Dat
                             sum += Decimal(curbs.loc[ indexOfdKey[0]][0])
                     except Exception:
                         pass
-            print(key+" = "+str(sum))
+            # print(key+" = "+str(sum))
             df.loc[ key, [column] ] = sum
                         
     cv.appendNewDateInfo( df )
     cv.calculateCompanyValue()
     return cv
+    

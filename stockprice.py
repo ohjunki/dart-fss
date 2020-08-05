@@ -11,6 +11,7 @@ stock_type = {
     'kosdaq': 'kosdaqMkt'
 }
 
+
 # download url 조합
 def get_download_stock(market_type=None):
   market_type_param = stock_type[market_type]

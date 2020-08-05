@@ -8,7 +8,7 @@ from dart_fss.corp.corp import Corp
 from dart_fss.corp.corp import CorpFromFile
 import pickle
 import os
-
+import FilePathManager as filePathManager
 
 def get_corp_list(loadFromFile = False):
     """ DART 공시된 회사 리스트 반환
@@ -46,7 +46,7 @@ def market_type_checker(market: Union[str, list]) -> List[str]:
     return market
 
 
-corpListDirectoryPath = os.getcwd()+"/corpList"
+corpListDirectoryPath = filePathManager.corpListDartDataDirectory
 class CorpList(object, metaclass=Singleton):
     def __init__(self, profile=False, loadFromFile=False):
         self.loadFromFile = loadFromFile
