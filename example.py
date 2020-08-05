@@ -7,7 +7,6 @@ import pandas as pd
 import stockprice
 from CompanyValue import CompanyValueAlgo1
 import fsExtractManager
-from pandas_datareader._utils import RemoteDataError
 import os
 
 """
