@@ -55,7 +55,7 @@ def doMainFlow_Finalcial( corp : Corp ):
         fm.saveFS( code , stockCode , name, fs_bs, fs_is, errorPath , "extractError")
     except Exception as e :
         logger.error(e, exc_info=True)
-        print( 'Error Analytics [{:s}]{:s}'.format( stockCode , name ) )
+        print( 'Error Analytics [{:s}][{:s}]{:s}'.format( code, stockCode , name ) )
         return
 
     valueModel.calculateCompanyValue(company.df, company)
@@ -65,7 +65,7 @@ def doMainFlow_Finalcial( corp : Corp ):
         resultDF = resultDF.append( DataFrame( [dic.values()] , columns=dic.keys() ) )
         resultDF.to_excel("{:s}/goodCorp.xlsx".format( fm.resultDirectory ))
         resultDF.to_pickle("{:s}/goodCorp.pkl".format( fm.resultDirectory ))
-    print( 'Finish Analytics [{:s}]{:s}'.format( stockCode, name ) )
+    print( 'Finish Analytics [{:s}][{:s}]{:s}'.format( code, stockCode, name ) )
 
 dontknowReasonErrorCompany = []
 def saveDontKnowReasonErrorCompany( stockCode ):
@@ -86,7 +86,7 @@ def startDartAnalytics(oneMoreCompany, lastCode = None ):
     api_key='ba617a15720b47d38c7dee91382257e7cfb2c7df' 
     dart.set_api_key(api_key=api_key)
 
-    corp_list = dart.get_corp_list(True)    
+    corp_list = dart.get_corp_list(False)    
     findLastCode = True if lastCode is None else False
     for corp in corp_list.corps:
         if corp._info['stock_code'] == None :
@@ -98,7 +98,7 @@ def startDartAnalytics(oneMoreCompany, lastCode = None ):
         else:
             findLastCode = True
 
-        print( 'Start Analytics [{:s}]{:s}'.format( corp._info['stock_code'] , corp._info['corp_name']) )
+        print( 'Start Analytics [{:s}][{:s}]{:s}'.format( corp._info['corp_code'] , corp._info['stock_code'] , corp._info['corp_name']) )
         doMainFlow_Finalcial( corp )
 
 def startOneCompany( stockCode ):
