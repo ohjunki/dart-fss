@@ -87,7 +87,7 @@ def startDartAnalytics(oneMoreCompany = [], lastCode = None ):
     api_key='ba617a15720b47d38c7dee91382257e7cfb2c7df' 
     dart.set_api_key(api_key=api_key)
 
-    corp_list = dart.get_corp_list(True)    
+    corp_list = dart.get_corp_list(False)    
     findLastCode = True if lastCode is None else False
 
 
@@ -100,8 +100,7 @@ def startDartAnalytics(oneMoreCompany = [], lastCode = None ):
                 continue
         else:
             findLastCode = True
-    
-        print( 'Start Analytics [{:s}]{:s}'.format( corp._info['stock_code'] , corp._info['corp_name']) )
+        print( 'Start Analytics [{:s}][{:s}]{:s}'.format( corp._info['corp_code'] , corp._info['stock_code'] , corp._info['corp_name']) )
         doMainFlow_Finalcial( corp )
 
 def startOneCompany( stockCode ):
