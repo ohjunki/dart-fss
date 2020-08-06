@@ -5,7 +5,6 @@ import pickle
 from pandas import DataFrame
 import pandas as pd
 import stockprice
-import AnalystFinancialStatementYear
 import os
 import random
 

@@ -105,22 +105,22 @@ class CompanyValueAlgo1(object):
             value = data['유동자산'] + data['투자자산'] - data['유동부채']*Decimal(self.liabilities_risk_ratio) - data['비유동부채']
             if data['영업이익'] > 0 :
                 value += data['영업이익']*Decimal(0.6)/Decimal(self.goal_rate_of_return)
-            self.df.loc['회사가치'][column] = value
+            self.df.loc['회사가치' , [column]] = value
 
         # TODO- columns SORT
         for column in self.df.columns:
-            self._info[column] = self.df.loc[ '회사가치', column ]
+            self._info[column] = Decimal(self.df.loc[ '회사가치', column ])
         
         valueDiffSum = Decimal(0)
-        for index in range(0, min( 3, len(self.df.columns)-1 ) ):
-            valueDiffSum += ( self.df.loc[ '회사가치', self.df.columns[index] ] - self.df.loc[ '회사가치', self.df.columns[index-1] ] )
+        for index in range(1, min( 4, len(self.df.columns)-1 ) ):
+            valueDiffSum += Decimal( self.df.loc[ '회사가치', self.df.columns[index] ] - self.df.loc[ '회사가치', self.df.columns[index-1] ] )
         
-        if min( 3, len(self.df.columns)-1 ) > 0:
-            valueDiffSum /= Decimal(min( 3, len(self.df.columns)-1 ))
+        if valueDiffSum != 0 :
+            valueDiffSum /= Decimal(3)
 
-        self.currentValue = self.df.loc[ '회사가치', self.df.columns[0] ]
+        self.currentValue = Decimal(self.df.loc[ '회사가치', self.df.columns[0] ])
         self.feautureValue = self.currentValue + valueDiffSum
-        self.avgValue = ( self.feautureValue + self.df.loc[ '회사가치', self.df.columns[0] ] ) / Decimal(2)
+        self.avgValue = ( self.feautureValue + Decimal(self.df.loc[ '회사가치', self.df.columns[0] ]) ) / Decimal(2)
         self.currentReturnRatio = Decimal(100)*(( self.currentValue - self.recentTotalStockPrice ) / self.recentTotalStockPrice )
         self.featureReturnRatio = Decimal(100)*(( self.feautureValue - self.recentTotalStockPrice ) / self.recentTotalStockPrice)
         self.avgReturnRatio = Decimal(100)*(( self.avgValue - self.recentTotalStockPrice ) / self.recentTotalStockPrice)
@@ -143,10 +143,10 @@ class CompanyValueAlgo1(object):
 
         
     def isValuableCompany( self ):
-        return self.avgReturnRatio > 30
+        return self.avgReturnRatio > Decimal(30)
 
     def saveResult( self ):
-        prvfix_filePath = "{:s}/[{:s}]{:s}_{:s}".format(fm.goodCorpListDirectoryPath, str(int(self.expectReturnRatio)), self.name, self.stock_code )
+        prvfix_filePath = "{:s}/[{:s}]{:s}_{:s}".format(fm.goodCorpListDirectoryPath, str(int(self.avgReturnRatio)), self.name, self.stock_code )
         self.df.to_excel( prvfix_filePath+".xlsx" )
         f = open( prvfix_filePath+".pkl", "wb" )
         pickle.dump( self , f )

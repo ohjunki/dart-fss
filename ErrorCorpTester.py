@@ -4,7 +4,6 @@ import FilePathManager as fm
 import pickle
 from pandas import DataFrame
 import pandas as pd
-import fsExtractManager
 import os
 import MainFlow
 
