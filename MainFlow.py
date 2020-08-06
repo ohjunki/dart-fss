@@ -28,8 +28,8 @@ logger = logging.Logger('catch_all')
 """
 
 
-resultDF = DataFrame()
-def doMainFlow_Finalcial( corp : Corp ):
+resultDF = [ DataFrame() , DataFrame() , DataFrame() ]
+def doMainFlow_Finalcial( corp : Corp , threadIndex = 0 ):
     global resultDF
     code , stockCode , name = corp._info['corp_code'], corp._info['stock_code'] ,  corp._info['corp_name']
     company = Company( code , stockCode , name )
@@ -63,9 +63,9 @@ def doMainFlow_Finalcial( corp : Corp ):
     if valueModel.isValuableCompany():
         company.saveResult()
         dic = { **(company.to_Dict_info()) , **(valueModel.to_Dict_info()) }
-        resultDF = resultDF.append( DataFrame( [dic.values()] , columns=dic.keys() ) )
-        resultDF.to_excel("{:s}/goodCorp.xlsx".format( fm.resultDirectory ))
-        resultDF.to_pickle("{:s}/goodCorp.pkl".format( fm.resultDirectory ))
+        resultDF[threadIndex] = resultDF[threadIndex].append( DataFrame( [dic.values()] , columns=dic.keys() ) )
+        resultDF[threadIndex].to_excel("{:s}/[{:d}]goodCorp.xlsx".format( fm.resultDirectory, threadIndex ))
+        resultDF[threadIndex].to_pickle("{:s}/[{:d}]goodCorp.pkl".format( fm.resultDirectory, threadIndex ))
     print( 'Finish Analytics [{:s}][{:s}]{:s}'.format( code, stockCode, name ) )
 
 dontknowReasonErrorCompany = []
@@ -132,7 +132,9 @@ def startMultiThreading(oneMoreCompany = [], lastCode = [None,None,None] ):
         하루 최대 10,000건
         분당 100회 이상 요청시 서비스가 제한될 수 있음
         총 상장 회사 3214
-        ba617a15720b47d38c7dee91382257e7cfb2c7df , e81485828c18bdd581d05833ea37180f6bb04492
+        local - ba617a15720b47d38c7dee91382257e7cfb2c7df ,   ( cujk0813@gmail.com)
+        server1 - e81485828c18bdd581d05833ea37180f6bb04492,  ( dt@ainbz.com )
+        server2 - 069873338283590a8254fb65878936c9c26bdffa,  ( dt@intsv.net )
     """
     api_key='ba617a15720b47d38c7dee91382257e7cfb2c7df' 
     dart.set_api_key(api_key=api_key)
@@ -151,7 +153,7 @@ def startMultiThreading(oneMoreCompany = [], lastCode = [None,None,None] ):
             findLastCode = True
     
         logger.warning( 'Start Analytics [Thread-{:d}][{:s}][{:s}]{:s}'.format( threadIndex, corp._info['corp_code'], corp._info['stock_code'] , corp._info['corp_name']) )
-        doMainFlow_Finalcial( corp )
+        doMainFlow_Finalcial( corp , threadIndex=threadIndex)
 
     MultiThreadProcess.doMultiThread_For_Index_State( func_work, 3, len(corp_list.corps) )
 
