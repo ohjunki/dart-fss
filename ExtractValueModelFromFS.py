@@ -1,34 +1,17 @@
+
 from pandas import DataFrame
-import FilePathManager as fm
-from CompanyValue import ValueDataFrameModel
 from decimal import *
 import math
+import logging
+logger = logging.Logger('catch_all')
 
-valueModel = ValueDataFrameModel()
-def extractFinancialStatement( corp ):
-    code , stockCode , name = corp._info['corp_code'], corp._info['stock_code'] ,  corp._info['corp_name']
-    try:
-        # return fm.loadFS(code , stockCode , name, fm.errorCompYearDir)
-        fs = corp.extract_fs(bgn_de='20160101')
-    except Exception:
-        return None, None
-    fs_bs = fs.show('bs')
-    fs_is = fs.show('cis')
-    fs_is = fs.show('is') if fs_is is None or len(fs_bs.columns) != len(fs_is.columns) else fs_is
-    fs_is = fs.show('cf') if fs_is is None or len(fs_bs.columns) != len(fs_is.columns) else fs_is
-    if fs_is is None or len(fs_bs.columns) != len(fs_is.columns):
-        print('No FS_IS [{:s}]{:s}'.format( corp._info['stock_code'] , corp._info['corp_name']) )
-        return None, None
-    fm.saveFS( code , stockCode , name, fs_bs, fs_is, fm.errorCompYearDir )
-    return fs_bs, fs_is
 
-def calculCompanyValue(code , stockCode, name,  fs_bs : DataFrame , fs_is : DataFrame ):
+def extract( fs_bs : DataFrame , fs_is : DataFrame , valueModel ):
     try:
-        values_bs = fs_bs.drop( columns=[ fs_bs.columns[0],fs_bs.columns[1] ])
-        values_bs.columns = values_bs.columns.droplevel(1)
+        values_bs = fs_bs.drop( columns=[ fs_bs.columns[0] ])
         kr_bstype = fs_bs.loc[ : , [ fs_bs.columns[0] ]]
 
-        values_is : DataFrame = fs_is.drop( columns=[ fs_is.columns[0],fs_is.columns[1] ])
+        values_is : DataFrame = fs_is.drop( columns=[ fs_is.columns[0] ])
         values_is.columns = values_bs.columns
         kr_istype = fs_is.loc[ : , [ fs_is.columns[0] ]]
 
@@ -65,9 +48,19 @@ def calculCompanyValue(code , stockCode, name,  fs_bs : DataFrame , fs_is : Data
                             pass
                 # print(key+" = "+str(sum))
                 df.loc[ key, [column] ] = sum
-    except:
-        fm.saveFS(code , stockCode, name, fs_bs, fs_is, fm.errorCompQuarterDir )
-        return None
+    except Exception as e:
+        logger.error(e, exc_info=True)
+        raise ExtractError(e)
 
     return df
     
+def extracterTest(code , stockCode , name):
+    fs_bs, fs_is = fm.loadFS( code , stockCode , name, fm.errorCompQuarterDir, "extractError " )
+    import ValueCalculer
+    resultBS, resultIS = extract(fs_bs, fs_is, ValueCalculer.Model() )
+    
+class ExtractError(Exception):
+    def __init__(self, e=None):
+        self.e = e
+        self.message = 'Extract Error'
+

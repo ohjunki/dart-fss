@@ -15,6 +15,7 @@ def startGoodCorpListTest():
 
     MainFlow.startDartAnalytics(list(goodCorpList),'073110')
     
-startGoodCorpListTest()
+# startGoodCorpListTest()
 
-# MainFlow.startOneCompany('044340')
+#Short Pass = 013030
+MainFlow.startOneCompany('044340')

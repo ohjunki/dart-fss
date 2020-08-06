@@ -37,12 +37,12 @@ ensure_dir(sharedDirectory)
 goodCorpListInSharedDirectory = '{:s}/SharedDirectory/GoodCorpList'.format( rootDirectory )
 ensure_dir(goodCorpListInSharedDirectory)
 
-def loadFS( code , stockCode , name , path ):
+def loadFS( code , stockCode , name , path , additional=''  ):
     try:
-        f = open( '{:s}/{:s}_{:s}_{:s}_fs_bs.pkl'.format( path, code , stockCode , name ) , "rb" )
+        f = open( '{:s}/{:s}_{:s}_{:s}_{:s}_fs_bs.pkl'.format( path, code , stockCode , name , additional) , "rb" )
         fs_bs = pickle.load( f )
         f.close()
-        f = open( '{:s}/{:s}_{:s}_{:s}_fs_is.pkl'.format( path, code , stockCode , name ) , "rb" )
+        f = open( '{:s}/{:s}_{:s}_{:s}_{:s}_fs_is.pkl'.format( path, code , stockCode , name , additional) , "rb" )
         fs_is = pickle.load( f )
         f.close()
         return fs_bs, fs_is
@@ -50,6 +50,6 @@ def loadFS( code , stockCode , name , path ):
         print( str(e))
         return None, None
 
-def saveFS( code , stockCode , name, fs_bs, fs_is , path ):
-    fs_bs.to_pickle( '{:s}/{:s}_{:s}_{:s}_fs_bs.pkl'.format( path, code , stockCode , name ) )
-    fs_is.to_pickle( '{:s}/{:s}_{:s}_{:s}_fs_is.pkl'.format( path, code , stockCode , name ) )
+def saveFS( code , stockCode , name, fs_bs, fs_is , path , additional=''):
+    fs_bs.to_pickle( '{:s}/{:s}_{:s}_{:s}_{:s}_fs_bs.pkl'.format( path, code , stockCode , name , additional ) )
+    fs_is.to_pickle( '{:s}/{:s}_{:s}_{:s}_{:s}_fs_is.pkl'.format( path, code , stockCode , name , additional ) )

@@ -4,12 +4,24 @@ import FilePathManager as fm
 import pickle
 from pandas import DataFrame
 import pandas as pd
-import AnalystFinancialStatementQuarter as AnalyisterQuarter
-import AnalystFinancialStatementYear as AnalyisterYear
-from CompanyValue import CompanyValueAlgo1
+
+import DownloadFinancialStatement as downloadFS
+import ExtractValueModelFromFS as extracter
+import ValueCalculer
+from CompanyValue import Company
+
 import os
+import logging
+logger = logging.Logger('catch_all')
+
 
 """
+    보고서 제출일은 결산일 12월 기준 대략 0331(사업) 0515(1분기) 0815 1115 이다.
+    ~0515 : 작년가치
+    ~0815 : 1분기까지 가치
+    ~1115 : 2분기까지 가치
+    ~0331 : 3분기까지 가치
+
     한 회사의 재무제표를 분석하고
     회사의 정보를 저장 및 에러처리를 한다.
 """
@@ -19,31 +31,41 @@ resultDF = DataFrame()
 def doMainFlow_Finalcial( corp : Corp ):
     global resultDF
     code , stockCode , name = corp._info['corp_code'], corp._info['stock_code'] ,  corp._info['corp_name']
-    cv = CompanyValueAlgo1( code , stockCode , name )
-    if cv.isErrorCorp :
+    company = Company( code , stockCode , name )
+    if company.isErrorCorp :
         print( 'Error Corp [{:s}]{:s}'.format( stockCode , name ) )
         return
 
-    # try:
-    for extracter in [AnalyisterQuarter, AnalyisterYear]:
-        fs_bs, fs_is = extracter.extractFinancialStatement( corp )
-        if fs_bs is None or fs_is is None:
-            return 
-        df = extracter.calculCompanyValue( code , stockCode , name, fs_bs, fs_is )
-        if df is None:
-            return
-        cv.appendNewDateInfo(df)
+    valueModel = ValueCalculer.Model()
+    try:
+        ### Quarter Append ###
+        errorPath = fm.errorCompYearDir
+        fs_bs, fs_is = downloadFS.requestQuarter( corp, valueModel.getISDataColumns() )
+        df = extracter.extract( fs_bs, fs_is, valueModel )
+        company.appendNewDateInfo(df)
 
-    cv.calculateCompanyValue()
-    if cv.isValuableCompany():
-        cv.saveResult()
-        dic = cv.to_Dict_info()
+        ### Annual Append ###
+        errorPath = fm.errorCompQuarterDir
+        fs_bs, fs_is = downloadFS.requestAnnual( corp )
+        df = extracter.extract( fs_bs, fs_is, valueModel )
+        company.appendNewDateInfo(df)
+    except (downloadFS.NoMoreThenOneYearData, downloadFS.NoCatchedError, downloadFS.NoISFSError, downloadFS.DartError, downloadFS.FSColumnLengthNotMatch):
+        return
+    except extracter.ExtractError:
+        fm.saveFS( code , stockCode , name, fs_bs, fs_is, errorPath , "extractError")
+    except Exception as e :
+        logger.error(e, exc_info=True)
+        print( 'Error Analytics [{:s}]{:s}'.format( stockCode , name ) )
+        return
+
+    valueModel.calculateCompanyValue(company.df, company)
+    if valueModel.isValuableCompany():
+        company.saveResult()
+        dic = { **(company.to_Dict_info()) , **(valueModel.to_Dict_info()) }
         resultDF = resultDF.append( DataFrame( [dic.values()] , columns=dic.keys() ) )
         resultDF.to_excel("{:s}/goodCorp.xlsx".format( fm.resultDirectory ))
         resultDF.to_pickle("{:s}/goodCorp.pkl".format( fm.resultDirectory ))
     print( 'Finish Analytics [{:s}]{:s}'.format( stockCode, name ) )
-    # except Exception:
-    #     print( 'Error Analytics [{:s}]{:s}'.format( stockCode , name ) )
 
 dontknowReasonErrorCompany = []
 def saveDontKnowReasonErrorCompany( stockCode ):
@@ -85,6 +107,23 @@ def startOneCompany( stockCode ):
     corp_list = dart.get_corp_list(True)    
     corp = corp_list.find_by_stock_code(stockCode)
     doMainFlow_Finalcial( corp )
+
+
+def testValueModel( code , stockCode , name ):
+    valueModel = ValueCalculer.Model()
+    company = Company( code , stockCode , name )
+
+    fs_bs, fs_is = fm.loadFS(code , stockCode , name, fm.errorCompQuarterDir, "after_refine")
+    df = extracter.extract( fs_bs, fs_is, valueModel )
+    company.appendNewDateInfo(df)
+
+    fs_bs, fs_is = fm.loadFS(code , stockCode , name, fm.errorCompYearDir, "after_refine")
+    df = extracter.extract( fs_bs, fs_is, valueModel )
+    company.appendNewDateInfo(df)
+    
+    valueModel.calculateCompanyValue(company.df, company)
+
+# testValueModel( '00293886', '044340', '위닉스' )
 
 # api_key='ba617a15720b47d38c7dee91382257e7cfb2c7df' 
 # dart.set_api_key(api_key=api_key)
