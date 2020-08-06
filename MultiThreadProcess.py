@@ -15,7 +15,7 @@ def work_Statement_For_Index( threadIndex , func_work, thread_cnt, list_size ):
     for i in range( 0 , list_size ):
         if i % thread_cnt == threadIndex :
             # time.sleep(2)
-            func_work(i)
+            func_work(threadIndex, i)
     logging.info("Thread %s: finishing", threadIndex)
 
 def doMultiThread_For_Index_State( func_work, thread_cnt = 4, list_size=0 ):
@@ -59,7 +59,7 @@ def testFunction():
     totalLen = 1000000
     list = [ i for i in range(0, totalLen ) ]
     WorkChecker = [ 0 for i in range(0, totalLen ) ]
-    def print_time( targetIndex ):
+    def print_time( threadIndex, targetIndex ):
         global list
         WorkChecker[targetIndex] += 1
 

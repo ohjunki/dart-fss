@@ -10,6 +10,7 @@ import ExtractValueModelFromFS as extracter
 import ValueCalculer
 from CompanyValue import Company
 
+import MultiThreadProcess
 import os
 import logging
 logger = logging.Logger('catch_all')
@@ -33,7 +34,7 @@ def doMainFlow_Finalcial( corp : Corp ):
     code , stockCode , name = corp._info['corp_code'], corp._info['stock_code'] ,  corp._info['corp_name']
     company = Company( code , stockCode , name )
     if company.isErrorCorp :
-        print( 'Error Corp [{:s}]{:s}'.format( stockCode , name ) )
+        print( 'Error Corp [{:s}][{:s}]{:s}'.format( code, stockCode , name ) )
         return
 
     valueModel = ValueCalculer.Model()
@@ -55,7 +56,7 @@ def doMainFlow_Finalcial( corp : Corp ):
         fm.saveFS( code , stockCode , name, fs_bs, fs_is, errorPath , "extractError")
     except Exception as e :
         logger.error(e, exc_info=True)
-        print( 'Error Analytics [{:s}]{:s}'.format( stockCode , name ) )
+        print( 'Error Analytics [{:s}][{:s}]{:s}'.format( code, stockCode , name ) )
         return
 
     valueModel.calculateCompanyValue(company.df, company)
@@ -65,7 +66,7 @@ def doMainFlow_Finalcial( corp : Corp ):
         resultDF = resultDF.append( DataFrame( [dic.values()] , columns=dic.keys() ) )
         resultDF.to_excel("{:s}/goodCorp.xlsx".format( fm.resultDirectory ))
         resultDF.to_pickle("{:s}/goodCorp.pkl".format( fm.resultDirectory ))
-    print( 'Finish Analytics [{:s}]{:s}'.format( stockCode, name ) )
+    print( 'Finish Analytics [{:s}][{:s}]{:s}'.format( code, stockCode, name ) )
 
 dontknowReasonErrorCompany = []
 def saveDontKnowReasonErrorCompany( stockCode ):
@@ -75,7 +76,7 @@ def saveDontKnowReasonErrorCompany( stockCode ):
     pickle.dump( dontknowReasonErrorCompany, f )
     f.close()
 
-def startDartAnalytics(oneMoreCompany, lastCode = None ):
+def startDartAnalytics(oneMoreCompany = [], lastCode = None ):
     """
         Open DART API KEY 설정
         하루 최대 10,000건
@@ -88,6 +89,8 @@ def startDartAnalytics(oneMoreCompany, lastCode = None ):
 
     corp_list = dart.get_corp_list(True)    
     findLastCode = True if lastCode is None else False
+
+
     for corp in corp_list.corps:
         if corp._info['stock_code'] == None :
             continue
@@ -97,7 +100,7 @@ def startDartAnalytics(oneMoreCompany, lastCode = None ):
                 continue
         else:
             findLastCode = True
-
+    
         print( 'Start Analytics [{:s}]{:s}'.format( corp._info['stock_code'] , corp._info['corp_name']) )
         doMainFlow_Finalcial( corp )
 
@@ -123,6 +126,36 @@ def testValueModel( code , stockCode , name ):
     
     valueModel.calculateCompanyValue(company.df, company)
 
+
+def startMultiThreading(oneMoreCompany = [], lastCode = [None,None,None] ):
+    """
+        Open DART API KEY 설정
+        하루 최대 10,000건
+        분당 100회 이상 요청시 서비스가 제한될 수 있음
+        총 상장 회사 3214
+        ba617a15720b47d38c7dee91382257e7cfb2c7df , e81485828c18bdd581d05833ea37180f6bb04492
+    """
+    api_key='ba617a15720b47d38c7dee91382257e7cfb2c7df' 
+    dart.set_api_key(api_key=api_key)
+
+    corp_list = dart.get_corp_list(True)    
+
+    def func_work( threadIndex, targetIndex ):
+        findLastCode = True if lastCode[threadIndex] is None else False
+        corp = corp_list.corps[targetIndex]
+        if corp._info['stock_code'] == None :
+            return
+        if not findLastCode and corp._info['stock_code'] != lastCode:
+            if corp._info['stock_code'] not in oneMoreCompany:
+                return
+        else:
+            findLastCode = True
+    
+        logger.warning( 'Start Analytics [Thread-{:d}][{:s}][{:s}]{:s}'.format( threadIndex, corp._info['corp_code'], corp._info['stock_code'] , corp._info['corp_name']) )
+        doMainFlow_Finalcial( corp )
+
+    MultiThreadProcess.doMultiThread_For_Index_State( func_work, 3, len(corp_list.corps) )
+
 # testValueModel( '00293886', '044340', '위닉스' )
 
 # api_key='ba617a15720b47d38c7dee91382257e7cfb2c7df' 
@@ -134,3 +167,5 @@ def testValueModel( code , stockCode , name ):
 # fs_bs.to_pickle( 'fs_bs.plk')
 # fs_is.to_pickle( 'fs_is.plk')
 # doMainFloow_Finalcial( fs_bs, fs_is , corp._info['corp_code'],  corp._info['stock_code'] ,  corp._info['corp_name'] )
+
+startMultiThreading()
