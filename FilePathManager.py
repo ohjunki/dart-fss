@@ -53,3 +53,6 @@ def loadFS( code , stockCode , name , path , additional=''  ):
 def saveFS( code , stockCode , name, fs_bs, fs_is , path , additional=''):
     fs_bs.to_pickle( '{:s}/{:s}_{:s}_{:s}_{:s}_fs_bs.pkl'.format( path, code , stockCode , name , additional ) )
     fs_is.to_pickle( '{:s}/{:s}_{:s}_{:s}_{:s}_fs_is.pkl'.format( path, code , stockCode , name , additional ) )
+
+def saveDF( code , stockCode , name, df,  path , additional=''):
+    df.to_pickle( '{:s}/{:s}_{:s}_{:s}_{:s}_df.pkl'.format( path, code , stockCode , name , additional ) )

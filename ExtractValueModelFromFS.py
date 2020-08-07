@@ -24,6 +24,7 @@ def extract( fs_bs : DataFrame , fs_is : DataFrame , valueModel ):
                 sum = Decimal(0.0)
                 for dKey in dic[key].keys():
                     indexOfdKey = kr_bstype[ kr_bstype[kr_bstype.columns[0]] == dKey].index
+                    indexOfdKey = kr_bstype[ kr_bstype[kr_bstype.columns[0]].str.contains(dKey) ].index if indexOfdKey.size == 0 else indexOfdKey
                     if indexOfdKey.size != 0 :
                         try:
                             if type(curbs.loc[ indexOfdKey[0]][0]) != None and not math.isnan( curbs.loc[ indexOfdKey[0]][0]):
@@ -55,7 +56,7 @@ def extract( fs_bs : DataFrame , fs_is : DataFrame , valueModel ):
     return df
     
 def extracterTest(code , stockCode , name):
-    fs_bs, fs_is = fm.loadFS( code , stockCode , name, fm.errorCompQuarterDir, "extractError " )
+    fs_bs, fs_is = fm.loadFS( code , stockCode , name, fm.errorCompQuarterDir, "extractError" )
     import ValueCalculer
     resultBS, resultIS = extract(fs_bs, fs_is, ValueCalculer.Model() )
     

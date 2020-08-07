@@ -27,14 +27,13 @@ logger = logging.Logger('catch_all')
     회사의 정보를 저장 및 에러처리를 한다.
 """
 
-
 resultDF = [ DataFrame() , DataFrame() , DataFrame() ]
 def doMainFlow_Finalcial( corp : Corp , threadIndex = 0 ):
     global resultDF
     code , stockCode , name = corp._info['corp_code'], corp._info['stock_code'] ,  corp._info['corp_name']
     company = Company( code , stockCode , name )
     if company.isErrorCorp :
-        print( 'Error Corp [{:s}][{:s}]{:s}'.format( code, stockCode , name ) )
+        print( '[Thread-{:d}]Error Corp [{:s}][{:s}]{:s}'.format( threadIndex, code, stockCode , name ) )
         return
 
     valueModel = ValueCalculer.Model()
@@ -56,17 +55,25 @@ def doMainFlow_Finalcial( corp : Corp , threadIndex = 0 ):
         fm.saveFS( code , stockCode , name, fs_bs, fs_is, errorPath , "extractError")
     except Exception as e :
         logger.error(e, exc_info=True)
-        print( 'Error Analytics [{:s}][{:s}]{:s}'.format( code, stockCode , name ) )
+        print( '[Thread-{:d}]Error Analytics [{:s}][{:s}]{:s}'.format( threadIndex, code, stockCode , name ) )
         return
 
-    valueModel.calculateCompanyValue(company.df, company)
-    if valueModel.isValuableCompany():
-        company.saveResult()
-        dic = { **(company.to_Dict_info()) , **(valueModel.to_Dict_info()) }
-        resultDF[threadIndex] = resultDF[threadIndex].append( DataFrame( [dic.values()] , columns=dic.keys() ) )
-        resultDF[threadIndex].to_excel("{:s}/[{:d}]goodCorp.xlsx".format( fm.resultDirectory, threadIndex ))
-        resultDF[threadIndex].to_pickle("{:s}/[{:d}]goodCorp.pkl".format( fm.resultDirectory, threadIndex ))
-    print( 'Finish Analytics [{:s}][{:s}]{:s}'.format( code, stockCode, name ) )
+    try:
+        valueModel.calculateCompanyValue(company.df, company)
+        if valueModel.isValuableCompany():
+            company.saveResult()
+            dic = { **(company.to_Dict_info()) , **(valueModel.to_Dict_info()) }
+            resultDF[threadIndex] = resultDF[threadIndex].append( DataFrame( [dic.values()] , columns=dic.keys() ) )
+            resultDF[threadIndex].to_excel("{:s}/[{:d}]goodCorp.xlsx".format( fm.resultDirectory, threadIndex ))
+            resultDF[threadIndex].to_pickle("{:s}/[{:d}]goodCorp.pkl".format( fm.resultDirectory, threadIndex ))
+        print( '[Thread-{:d}]Finish Analytics [{:s}][{:s}]{:s}'.format( threadIndex, code, stockCode, name ) )
+    except Exception as e:
+        dic = company.to_Dict_info()
+        fm.saveDF( code, stockCode , name, company.df, fm.errorCompDir, "Thread[{:d}]_company_df" )
+        fm.saveDF( code, stockCode , name, DataFrame( [dic.values()] , columns=dic.keys() ) , fm.errorCompDir, "Thread[{:d}]_company_info" )
+        logger.error(e, exc_info=True)
+        print( '[Thread-{:d}]Error Caculating [{:s}][{:s}]{:s}'.format( threadIndex, code, stockCode , name ) )
+        return
 
 dontknowReasonErrorCompany = []
 def saveDontKnowReasonErrorCompany( stockCode ):
@@ -140,10 +147,12 @@ def startMultiThreading(oneMoreCompany = [], lastCode = [None,None,None] ):
     dart.set_api_key(api_key=api_key)
 
     corp_list = dart.get_corp_list(True)    
+    StartIndex = int(len(corp_list.corps)*2/7) + int(len(corp_list.corps)*2/7)
+    Length = len(corp_list.corps) - int(len(corp_list.corps)*2/7) - int(len(corp_list.corps)*2/7)
 
     def func_work( threadIndex, targetIndex ):
         findLastCode = True if lastCode[threadIndex] is None else False
-        corp = corp_list.corps[targetIndex]
+        corp = corp_list.corps[StartIndex+targetIndex]
         if corp._info['stock_code'] == None :
             return
         if not findLastCode and corp._info['stock_code'] != lastCode:
@@ -155,7 +164,7 @@ def startMultiThreading(oneMoreCompany = [], lastCode = [None,None,None] ):
         logger.warning( 'Start Analytics [Thread-{:d}][{:s}][{:s}]{:s}'.format( threadIndex, corp._info['corp_code'], corp._info['stock_code'] , corp._info['corp_name']) )
         doMainFlow_Finalcial( corp , threadIndex=threadIndex)
 
-    MultiThreadProcess.doMultiThread_For_Index_State( func_work, 3, len(corp_list.corps) )
+    MultiThreadProcess.doMultiThread_For_Index_State( func_work, 3, Length )
 
 # testValueModel( '00293886', '044340', '위닉스' )
 
@@ -169,4 +178,7 @@ def startMultiThreading(oneMoreCompany = [], lastCode = [None,None,None] ):
 # fs_is.to_pickle( 'fs_is.plk')
 # doMainFloow_Finalcial( fs_bs, fs_is , corp._info['corp_code'],  corp._info['stock_code'] ,  corp._info['corp_name'] )
 
-startMultiThreading()
+startMultiThreading(lastCode=[None,'031990','002670'])
+# Thread-0 ?? 011560를 완수함
+#"[Thread-1][00110307][031990]대선조선" : 에러
+# [Thread-2][00115472][002670]미주제강 : 에러

@@ -29,6 +29,7 @@ def requestAnnual( corp , bgn_de='20160101' ):
     elif len(fs_bs.columns) != len(fs_is.columns):
         raise FSColumnLengthNotMatch()
 
+    # fm.saveFS( code , stockCode , name, fs_bs, fs_is, fm.errorCompQuarterDir, "before_refine" )
     try:
         resultBS, resultIS = remainOnlyKoreanNaming( fs_bs, fs_is )
     except Exception as e:
@@ -37,7 +38,7 @@ def requestAnnual( corp , bgn_de='20160101' ):
         print("{:s} {:s} {:s} No Catched Error in requestQuarter.refine".format(code , stockCode , name ))
         raise NoCatchedError(e)
 
-    # fm.saveFS( code , stockCode , name, resultBS, resultIS, fm.errorCompYearDir, "after_refine" )
+    #fm.saveFS( code , stockCode , name, resultBS, resultIS, fm.errorCompYearDir, "after_refine" )
     return resultBS, resultIS
 
 def remainOnlyKoreanNaming( fs_bs, fs_is ):
@@ -79,6 +80,7 @@ def requestQuarter( corp, extractFSCategory, checkYearRange = 1 ):
     if fs_is is None or fs_bs is None:
         raise NoISFSError()
 
+    # fm.saveFS( code , stockCode , name, fs_bs, fs_is, fm.errorCompQuarterDir, "before_refine" )
     try:
         resultBS, resultIS = remainOnlyKoreanNaming(fs_bs, fs_is)
         resultBS, resultIS = refineQuarterFS(resultBS, resultIS, extractFSCategory)
@@ -88,7 +90,7 @@ def requestQuarter( corp, extractFSCategory, checkYearRange = 1 ):
         print("{:s} {:s} {:s} No Catched Error in requestQuarter.refine".format(code , stockCode , name ))
         raise NoCatchedError(e)
 
-    # fm.saveFS( code , stockCode , name, resultBS, resultIS, fm.errorCompQuarterDir, "after_refine" )
+    #fm.saveFS( code , stockCode , name, resultBS, resultIS, fm.errorCompQuarterDir, "after_refine" )
     return resultBS, resultIS
 
 def findDatFrame( df , columnString ):
@@ -129,6 +131,7 @@ def refineQuarterFS( fs_bs : DataFrame , fs_is : DataFrame, extractFSISCategory,
         print( "@@@@@@@@No One Year Data")
         raise NoMoreThenOneYearData()
 
+    resultBS.columns = [ '{:s}Q'.format(c) for c in resultBS.columns ]
     resultIS.columns = resultBS.columns
 
     return resultBS, resultIS
