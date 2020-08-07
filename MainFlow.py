@@ -139,11 +139,11 @@ def startMultiThreading(oneMoreCompany = [], lastCode = [None,None,None] ):
         하루 최대 10,000건
         분당 100회 이상 요청시 서비스가 제한될 수 있음
         총 상장 회사 3214
-        local - ba617a15720b47d38c7dee91382257e7cfb2c7df ,   ( cujk0813@gmail.com)
-        server1 - e81485828c18bdd581d05833ea37180f6bb04492,  ( dt@ainbz.com )
+        local -  e81485828c18bdd581d05833ea37180f6bb04492,   ( cujk0813@gmail.com)
+        server1 - ba617a15720b47d38c7dee91382257e7cfb2c7df,  ( dt@ainbz.com )
         server2 - 069873338283590a8254fb65878936c9c26bdffa,  ( dt@intsv.net )
     """
-    api_key='ba617a15720b47d38c7dee91382257e7cfb2c7df' 
+    api_key='e81485828c18bdd581d05833ea37180f6bb04492' 
     dart.set_api_key(api_key=api_key)
 
     corp_list = dart.get_corp_list(True)    
