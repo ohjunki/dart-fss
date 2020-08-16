@@ -38,18 +38,18 @@ def requestAnnual( corp , bgn_de='20160101' ):
         print("{:s} {:s} {:s} No Catched Error in requestQuarter.refine".format(code , stockCode , name ))
         raise NoCatchedError(e)
 
-    #fm.saveFS( code , stockCode , name, resultBS, resultIS, fm.errorCompYearDir, "after_refine" )
+    # fm.saveFS( code , stockCode , name, resultBS, resultIS, fm.errorCompYearDir, "after_refine" )
     return resultBS, resultIS
 
 def remainOnlyKoreanNaming( fs_bs, fs_is ):
     resultBS = fs_bs
     resultIS = fs_is
-    if resultBS.columns[1][1] == 'label_en' :
+    if resultBS.columns[1][1] == 'label_en' or resultBS.columns[1][1] == 'comment' :
         resultBS = resultBS.drop( columns=[resultBS.columns[1]])
     
     resultBS.columns = resultBS.columns.droplevel(1)
 
-    if resultIS.columns[1][1] == 'label_en' :
+    if resultIS.columns[1][1] == 'label_en' or resultIS.columns[1][1] == 'comment' :
         resultIS = resultIS.drop( columns=[resultIS.columns[1]])
     resultIS.columns = resultIS.columns.droplevel(1)
 
@@ -86,13 +86,15 @@ def requestQuarter( corp, extractFSCategory, checkYearRange = 1 ):
     try:
         resultBS, resultIS = remainOnlyKoreanNaming(fs_bs, fs_is)
         resultBS, resultIS = refineQuarterFS(resultBS, resultIS, extractFSCategory)
+    except NoMoreThenOneYearData as e:
+        raise NoMoreThenOneYearData(e)
     except Exception as e:
         fm.saveFS( code , stockCode , name, fs_bs, fs_is, fm.errorCompQuarterDir, "before_refine" )
         logger.error(e, exc_info=True)
         print("{:s} {:s} {:s} No Catched Error in requestQuarter.refine".format(code , stockCode , name ))
         raise NoCatchedError(e)
 
-    #fm.saveFS( code , stockCode , name, resultBS, resultIS, fm.errorCompQuarterDir, "after_refine" )
+    # fm.saveFS( code , stockCode , name, resultBS, resultIS, fm.errorCompQuarterDir, "after_refine" )
     return resultBS, resultIS
 
 def findDatFrame( df , columnString ):
@@ -139,9 +141,9 @@ def refineQuarterFS( fs_bs : DataFrame , fs_is : DataFrame, extractFSISCategory,
     return resultBS, resultIS
 
 def refineQuarterTest(code , stockCode , name):
-    resultBS, resultIS = fm.loadFS( code , stockCode , name, fm.errorCompQuarterDir, "before_refine" )
+    fs_bs, fs_is = fm.loadFS( code , stockCode , name, fm.errorCompQuarterDir, "before_refine" )
     try:
-        # resultBS, resultIS = remainOnlyKoreanNaming(fs_bs, fs_is)
+        resultBS, resultIS = remainOnlyKoreanNaming(fs_bs, fs_is)
         import ValueCalculer
         resultBS, resultIS = refineQuarterFS(resultBS, resultIS, ValueCalculer.Model().getISDataColumns() )
     except Exception as e:
@@ -149,12 +151,11 @@ def refineQuarterTest(code , stockCode , name):
         print("No Catched Error in requestQuarter.refine")
         raise NoCatchedError(e)
 
-import os
-for fileName in os.listdir( fm.errorCompQuarterDir ):
-    if fileName.find( "fs_bs") == -1 :
-        continue
-    sp = fileName.split('_')
-    refineQuarterTest( sp[0] , sp[1], sp[2] )
+# import os
+# for fileName in os.listdir( fm.errorCompQuarterDir ):
+#     if fileName.find( "fs_bs") == -1 :
+#         continue
+#     sp = fileName.split('_')
 
 def refineYearTest(code , stockCode , name):
     fs_bs, fs_is = fm.loadFS( code , stockCode , name, fm.errorCompYearDir, "before_refine" )
@@ -188,3 +189,6 @@ class DartError(Exception):
     def __init__(self, e=None):
         self.e = e
         self.message = 'Dart Has Error'
+
+        
+# refineQuarterTest( '00117267', '082640' , '동양생명' )

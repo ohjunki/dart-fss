@@ -28,7 +28,7 @@ logger = logging.Logger('catch_all')
 """
 
 resultDF = [ DataFrame() , DataFrame() , DataFrame() ]
-def doMainFlow_Finalcial( corp : Corp , threadIndex = 0 ):
+def doMainFlow_Finalcial( corp : Corp , threadIndex = 0 , forceSaveResultDF = False):
     global resultDF
     code , stockCode , name = corp._info['corp_code'], corp._info['stock_code'] ,  corp._info['corp_name']
     company = Company( code , stockCode , name )
@@ -60,7 +60,7 @@ def doMainFlow_Finalcial( corp : Corp , threadIndex = 0 ):
 
     try:
         valueModel.calculateCompanyValue(company.df, company)
-        if valueModel.isValuableCompany():
+        if valueModel.isValuableCompany() or forceSaveResultDF :
             company.saveResult()
             dic = { **(company.to_Dict_info()) , **(valueModel.to_Dict_info()) }
             resultDF[threadIndex] = resultDF[threadIndex].append( DataFrame( [dic.values()] , columns=dic.keys() ) )
@@ -115,7 +115,7 @@ def startOneCompany( stockCode ):
     dart.set_api_key(api_key=api_key)
     corp_list = dart.get_corp_list(True)    
     corp = corp_list.find_by_stock_code(stockCode)
-    doMainFlow_Finalcial( corp )
+    doMainFlow_Finalcial( corp , forceSaveResultDF = True )
 
 
 def testValueModel( code , stockCode , name ):
@@ -167,18 +167,17 @@ def startMultiThreading(oneMoreCompany = [], lastCode = [None,None,None] ):
     MultiThreadProcess.doMultiThread_For_Index_State( func_work, 3, Length )
 
 # testValueModel( '00293886', '044340', '위닉스' )
+# startMultiThreading(lastCode=[None,'031990','002670'])
 
-# api_key='ba617a15720b47d38c7dee91382257e7cfb2c7df' 
-# dart.set_api_key(api_key=api_key)
-
-# corp_list = dart.get_corp_list(True)
-# corp = corp_list.find_by_corp_name('삼성전자')[0]
-# fs_bs, fs_is = DefaultAnalyister.extractFinancialStatement( corp )
-# fs_bs.to_pickle( 'fs_bs.plk')
-# fs_is.to_pickle( 'fs_is.plk')
-# doMainFloow_Finalcial( fs_bs, fs_is , corp._info['corp_code'],  corp._info['stock_code'] ,  corp._info['corp_name'] )
+def testOnlyTargetCorp( targetList=[]):
+    api_key='e81485828c18bdd581d05833ea37180f6bb04492' 
+    dart.set_api_key(api_key=api_key)
+    corp_list = dart.get_corp_list(True)    
+    for corp in corp_list.corps:
+        if corp._info['stock_code'] == None :
+            continue
+        if corp._info['stock_code'] not in targetList:
+            continue
+        doMainFlow_Finalcial( corp , forceSaveResultDF=True)
 
 startMultiThreading(lastCode=[None,'031990','002670'])
-# Thread-0 ?? 011560를 완수함
-#"[Thread-1][00110307][031990]대선조선" : 에러
-# [Thread-2][00115472][002670]미주제강 : 에러

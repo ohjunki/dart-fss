@@ -10,7 +10,8 @@ rootDirectory = "CorpDatas"
 ensure_dir(rootDirectory)
 
 #### rootDirectory must exist ####
-tryStep = '{:s}[3]'.format( str(date.today()) )
+tryStep = '{:s}[0]'.format( str(date.today()) )
+# tryStep = 'targetList'
 rootStepDirectory = "{:s}/{:s}".format(rootDirectory, tryStep)
 ensure_dir(rootStepDirectory)
 
