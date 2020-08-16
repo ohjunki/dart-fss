@@ -42,22 +42,24 @@ def requestAnnual( corp , bgn_de='20160101' ):
     return resultBS, resultIS
 
 def remainOnlyKoreanNaming( fs_bs, fs_is ):
-    if fs_bs.columns[1][1] == 'label_en' :
-        fs_bs = fs_bs.drop( columns=[fs_bs.columns[1]])
+    resultBS = fs_bs
+    resultIS = fs_is
+    if resultBS.columns[1][1] == 'label_en' :
+        resultBS = resultBS.drop( columns=[resultBS.columns[1]])
     
-    fs_bs.columns = fs_bs.columns.droplevel(1)
+    resultBS.columns = resultBS.columns.droplevel(1)
 
-    if fs_is.columns[1][1] == 'label_en' :
-        fs_is = fs_is.drop( columns=[fs_is.columns[1]])
-    fs_is.columns = fs_is.columns.droplevel(1)
+    if resultIS.columns[1][1] == 'label_en' :
+        resultIS = resultIS.drop( columns=[resultIS.columns[1]])
+    resultIS.columns = resultIS.columns.droplevel(1)
 
-    tmp = list(fs_is.columns)
+    tmp = list(resultIS.columns)
     tmp[0] = '카테고리'
-    fs_is.columns = tmp
-    tmp = list(fs_bs.columns)
+    resultIS.columns = tmp
+    tmp = list(resultBS.columns)
     tmp[0] = '카테고리'
-    fs_bs.columns = tmp
-    return fs_bs, fs_is
+    resultBS.columns = tmp
+    return resultBS, resultIS
 
 ####### Quarter Report 받아와서 정제 작업 #######
 def requestQuarter( corp, extractFSCategory, checkYearRange = 1 ):
@@ -137,9 +139,9 @@ def refineQuarterFS( fs_bs : DataFrame , fs_is : DataFrame, extractFSISCategory,
     return resultBS, resultIS
 
 def refineQuarterTest(code , stockCode , name):
-    fs_bs, fs_is = fm.loadFS( code , stockCode , name, fm.errorCompQuarterDir, "before_refine" )
+    resultBS, resultIS = fm.loadFS( code , stockCode , name, fm.errorCompQuarterDir, "before_refine" )
     try:
-        resultBS, resultIS = remainOnlyKoreanNaming(fs_bs, fs_is)
+        # resultBS, resultIS = remainOnlyKoreanNaming(fs_bs, fs_is)
         import ValueCalculer
         resultBS, resultIS = refineQuarterFS(resultBS, resultIS, ValueCalculer.Model().getISDataColumns() )
     except Exception as e:
@@ -147,7 +149,12 @@ def refineQuarterTest(code , stockCode , name):
         print("No Catched Error in requestQuarter.refine")
         raise NoCatchedError(e)
 
-# refineQuarterTest( '00293886', '044340', '위닉스' )
+import os
+for fileName in os.listdir( fm.errorCompQuarterDir ):
+    if fileName.find( "fs_bs") == -1 :
+        continue
+    sp = fileName.split('_')
+    refineQuarterTest( sp[0] , sp[1], sp[2] )
 
 def refineYearTest(code , stockCode , name):
     fs_bs, fs_is = fm.loadFS( code , stockCode , name, fm.errorCompYearDir, "before_refine" )
