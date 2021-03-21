@@ -147,8 +147,8 @@ def startMultiThreading(oneMoreCompany = [], lastCode = [None,None,None] ):
     dart.set_api_key(api_key=api_key)
 
     corp_list = dart.get_corp_list(True)    
-    StartIndex = int(len(corp_list.corps)*2/7) + int(len(corp_list.corps)*2/7)
-    Length = len(corp_list.corps) - int(len(corp_list.corps)*2/7) - int(len(corp_list.corps)*2/7)
+    StartIndex = 0
+    Length = len(corp_list.corps)
 
     def func_work( threadIndex, targetIndex ):
         findLastCode = True if lastCode[threadIndex] is None else False
@@ -180,4 +180,4 @@ def testOnlyTargetCorp( targetList=[]):
             continue
         doMainFlow_Finalcial( corp , forceSaveResultDF=True)
 
-startMultiThreading(lastCode=[None,'031990','002670'])
+startMultiThreading()
